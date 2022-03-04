@@ -1,2 +1,3 @@
-# fine-grained cancer image classification
- fine-grained video analysis, visual attention, action recognition
+# volume classification for rectal MR
+## Train
+## Test
