@@ -1,6 +1,5 @@
 # LAST updated: 20201109 12:30
 import torch
-from .conv_builder import Conv2DSimple as Conv2DSimple
 from .conv_builder import Conv3DSimple as Conv3DSimple
 from .conv_builder import Conv3DNoTemporal as Conv3DNoTemporal
 from .conv_builder import Conv2Plus1D as Conv2Plus1D
@@ -8,39 +7,13 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 
-class BasicConv(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size, conv_builder = Conv2DSimple, padding=0, relu=True, bn=True):
-        super(BasicConv, self).__init__()
-        self.out_channels = out_planes
-        self.bn = nn.BatchNorm3d(out_planes, eps=1e-5, momentum=0.01, affine=True) if bn else None
-        self.relu = nn.ReLU() if relu else None
-
-        if conv_builder == Conv2DSimple:
-            self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=1, padding=padding, bias=False)
-            self.bn = nn.BatchNorm2d(out_planes,eps=1e-5, momentum=0.01, affine=True) if bn else None
-        elif conv_builder == Conv3DSimple:
-            self.conv = nn.Conv3d(in_planes, out_planes, kernel_size=(3, kernel_size, kernel_size), stride=1,
-                                  padding=(1, padding, padding), bias=False)
-        elif conv_builder == Conv3DNoTemporal:
-            self.conv = nn.Conv3d(in_planes, out_planes, kernel_size=(1, kernel_size, kernel_size), stride=1,
-                                  padding=(0, padding, padding), bias=False)
-        else:
-            raise ValueError("<BasicConv> Wrong conv_builder")
-
-    def forward(self, x):
-        x = self.conv(x)
-        if self.bn is not None:
-            x = self.bn(x)
-        if self.relu is not None:
-            x = self.relu(x)
-        return x
 
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
 
 class ChannelGate(nn.Module):
-    def __init__(self, gate_channels, reduction_ratio=16, dimension = '2d'):
+    def __init__(self, gate_channels, reduction_ratio=16, dimension = '3d'):
         '''
         pool_types=['avg', 'max']
         '''
@@ -79,12 +52,11 @@ class ChannelPool(nn.Module):
         return torch.cat( (torch.max(x,1)[0].unsqueeze(1), torch.mean(x,1).unsqueeze(1)), dim=1 )
 
 class SpatialGate(nn.Module):
-    def __init__(self, conv_builder=Conv2DSimple):
+    def __init__(self, conv_builder=Conv3DSimple):
         super(SpatialGate, self).__init__()
-        kernel_size = 7
         self.compress = ChannelPool()
-        self.spatial = BasicConv(2, 1, kernel_size, conv_builder=conv_builder,
-                                 padding=(kernel_size-1) // 2, relu=False)
+        self.spatial = conv_builder(2, 1, kernel_size=7)
+
     def forward(self, x):
         x_compress = self.compress(x)
         x_out = self.spatial(x_compress)
@@ -92,12 +64,14 @@ class SpatialGate(nn.Module):
         return x * scale, scale
 
 class CBAM(nn.Module):
+    obj=[]
 
-    def __init__(self, gate_channels, reduction_ratio=16, dimension = '2d', conv_builder = Conv2DSimple, no_spatial=False):
+    def __init__(self, gate_channels, reduction_ratio=16, dimension = '3d', conv_builder = Conv3DSimple, no_spatial=False):
         '''
         pool_types=['avg', 'max']
         '''
         super(CBAM, self).__init__()
+        CBAM.obj.append(self)
         self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, dimension = dimension)
         self.no_spatial=no_spatial
         self.att_map = 0
@@ -116,10 +90,19 @@ class CBAM(nn.Module):
 
         return x_out
 
+    def _initialize_weights(self):
+        print('CBAM init !!!')
+        for key in self.state_dict():
+            if ('bn' in key) and ('SpatialGate' in key):
+                self.state_dict()[key][...] = 0
+
+
 
 class SE(nn.Module):
-    def __init__(self, channel, reduction=16, dimension = '2d'):
+    obj = []
+    def __init__(self, channel, reduction=16, dimension = '3d'):
         super(SE, self).__init__()
+        SE.obj.append(self)
         self.att_map = 0
         self.return_att_map = False
         if dimension == '2d':
@@ -148,13 +131,21 @@ class SE(nn.Module):
         y = self.unsqueeze(self.fc(y))
         if self.return_att_map:
             # self.att_map = scale.clone().detach().half().squeeze(1)
-            self.att_map = y.clone().detach().float().squeeze(1)
+            self.att_map = y.clone().detach().float().squeeze(2).squeeze(2).squeeze(2)
         return x * y.expand_as(x)
+
+    def _initialize_weights(self):
+        print('SE init !!!')
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal(m.weight, mode='fan_in', nonlinearity='relu')
 
 
 
 class NonLocalBlockND(nn.Module):
     return_att_map = False
+    obj = []
+
     def __init__(self, in_channels, inter_channels=None, dimension=3, sub_sample=True, bn_layer=True):
         """
         :param in_channels:
@@ -167,7 +158,8 @@ class NonLocalBlockND(nn.Module):
         super(NonLocalBlockND, self).__init__()
 
         assert dimension in [1, 2, 3]
-
+        NonLocalBlockND.obj.append(self)
+        self.bn_layer = bn_layer
         self.dimension = dimension
         self.sub_sample = sub_sample
         self.return_att_map = False
@@ -219,6 +211,15 @@ class NonLocalBlockND(nn.Module):
         if sub_sample:
             self.g = nn.Sequential(self.g, max_pool_layer)
             self.phi = nn.Sequential(self.phi, max_pool_layer)
+
+    def _initialize_weights(self):
+        print('NL init !!!')
+        if self.bn_layer:
+            nn.init.constant_(self.W[1].weight, 0)
+            nn.init.constant_(self.W[1].bias, 0)
+        else:
+            nn.init.constant_(self.W.weight, 0)
+            nn.init.constant_(self.W.bias, 0)
 
 
     def forward(self, x, stride_HW=None, dilation_HW=None):

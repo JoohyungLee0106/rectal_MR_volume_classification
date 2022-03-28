@@ -175,6 +175,9 @@ class CustomDataset(Dataset):
         stack_dict['image'][:, 0, :, :] = augmented['image']
 
         for i in range(1, self.num_slices_3d):
+            # print(f'image: {np.array(Image.open(path_list_img[i]), np.uint8).shape}')
+            # plt.imshow(np.array(Image.open(path_list_img[i]), np.uint8))
+            # plt.show()
             augmented_temp = self.transform.replay(augmented['replay'],
                                             image=np.array(Image.open(path_list_img[i]), np.uint8) )
 
@@ -241,10 +244,15 @@ class CustomDataset(Dataset):
         dataDict['id'] = self.process_id(idx)
         dataDict['category'] = float(self.csv_file.iloc[idx, 0])
         dataDict['image'] = (dataDict['image']).type(torch.float32)
-        # if self.if_repr_num and self.dimension == '3D':
-        dataDict['repr_num'] = self.csv_file.at[idx, 'repr_num']
-
-
+        if self.dimension == '3D':
+            repr_num = self.csv_file.at[idx, 'repr_num']
+            repr_num = [int(s) for s in repr_num.replace('[','').replace(']','').split(', ')]
+            
+            #rint(f'repr_num: {repr_num}, type: {type(repr_num)}')
+            
+            dataDict['repr_num'] = torch.zeros(7)
+            dataDict['repr_num'][repr_num]=1
+            #rint(f'after: {dataDict["repr_num"]}')a
         # dataDict['repr_num'] = list(temp_list)
 
         return self.precision(self.postprocess(dataDict))
