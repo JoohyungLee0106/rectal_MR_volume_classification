@@ -1,6 +1,6 @@
 # volume classification for rectal MR
 ## Train
-python main.py
+python main_volume_wise.py --train
 
 ## Test
-python main.py --evaluate $PATH_TO_WEIGHT_FILE
+python main_volume_wise.py

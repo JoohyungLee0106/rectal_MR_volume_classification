@@ -42,7 +42,7 @@ parser.add_argument('--workers', default=8, type=int, help='number of data loadi
 parser.add_argument('--test_aug', default=10, type=int, help='number of augmentations for test-time augmentation')
 parser.add_argument('-g', '--gpu', nargs="+", default=0, type=int, help='(List of) GPU id(s) to use.')
 parser.add_argument('--resume', action='store_true', help='to resume from the stored weights')
-parser.add_argument('--train', action='store_false', help='not to train the model')
+parser.add_argument('--train', action='store_true', help='to train the model')
 args = parser.parse_args()
 args.test_noaug = 1
 
