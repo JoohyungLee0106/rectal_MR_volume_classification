@@ -1,23 +1,19 @@
-# LAST updated: 20201031 17:00
 import configparser
 from configparser import ExtendedInterpolation
 import pandas as pd
 import argparse
 import os
 import random
-import shutil
 import time
 import statistics
 import warnings
 import numpy as np
 import math
-# from .utils import loss as losses
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
-import torch.distributed as dist
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
@@ -37,15 +33,9 @@ config.read('config_rectumcrop_c.ini')
 node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='Rectal MR Volume Classification')
-parser.add_argument('-n', '--node', default='',
-                    choices=node_list,
-                    help='model architecture: ' +
-                         ' | '.join(node_list) +
-                         ' (default: kaist_server)')
-
-parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5',
-                                                         'frmc2', 'frmc3', 'frmc4', 'frmc5'],
-                    help='Function to merge frame-level feature')
+parser.add_argument('-n', '--node', default='', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: kaist_server)')
+parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5', 'frmc2', 'frmc3', 'frmc4', 'frmc5'],
+                    help='Mixtures of 2D and 3D CNN')
 parser.add_argument('--aggregation-function', default='bilinear', choices=['bilinear', 'gap', 'mxp', 'attention'],
                     help='Function to merge frame-level feature')
 parser.add_argument('--workers', default=8, type=int, help='number of data loading workers (default: 4)')
@@ -54,11 +44,11 @@ parser.add_argument('-g', '--gpu', nargs="+", default=0, type=int, help='(List o
 parser.add_argument('--resume', action='store_true', help='to resume from the stored weights')
 parser.add_argument('--train', action='store_false', help='not to train the model')
 args = parser.parse_args()
+args.test_noaug = 1
 
 NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion.replace('f',''), 'att_type': [False]*4, 'if_framewise': True,
                  'loss': losses.__dict__['FocalLoss'], 'loss_param': {}}
 
-args.test_noaug = 1
 
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
@@ -195,7 +185,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
 
     if args.train:
         reset_seed()
-        # TEMP
         for epoch in range(args.start_epoch, config.getint('default', 'max_epoch')):
 
             # train for one epoch
@@ -241,7 +230,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
             if (optimizer.param_groups[-1]['lr'] < float(config.get('default', 'lr_min'))) or \
                     ((epoch - best_epoch) > config.getint('default', 'end_patience')):
                 break
-            # print(f'TIME PER ONE EPOCH: {time.time() - t1}')
         for obj in AverageMeter.instances_tr:
             obj.reset_epoch()
             obj.update_best()
@@ -261,9 +249,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
             validate(test_loader_aug, model, performance_metric_stat, args, dir_results_fold)
 
         for obj in PerformanceMetrics.instances_test:
-            # print(f'obj id: {obj.id}')
-            # obj.store()
-            # obj.store_best_state()
             obj.update_last(repetition=args.test_aug,aug_type = 'aug')
             obj.reset_epoch()
 
@@ -330,9 +315,6 @@ def cycle(iterable):
 def train(train_loader, model, optimizer, performance_metric, args):
     # switch to train mode
     loss_all = 0
-    # cnt_t2 = 0
-    # cnt_t3 = 0
-    # t1=time.time()
     model.train()
     for _i, _data in enumerate(zip(cycle(train_loader[0]), train_loader[1])):
         data={}
@@ -359,7 +341,6 @@ def train(train_loader, model, optimizer, performance_metric, args):
 
         if _i*8.0 > args.t2n + args.t3n - 8:
             return loss_all
-    # return loss_all / float(cnt)
 
 
 # key_metric
@@ -382,10 +363,7 @@ def validate(val_loader, model, performance_metric, args, dir_results_fold):
                 data['image'] = data['image'].cuda(non_blocking=True)
                 data['category'] = data['category'].cuda(non_blocking=True)
                 data['repr_num'] = data['repr_num'].cuda(non_blocking=True)
-            #data['image'] = torch.autograd.Variable(data['image'])
-            #data['category'] = torch.autograd.Variable(data['category'])
             # classification output: logit
-            # segmentation output: logit
             output, data['category'] = model(data=data, if_train=False)
             performance_metric['category'][0].update(output['category'], data['category'])
 
@@ -620,22 +598,18 @@ class AverageMeter(PerformanceMetrics):
         self.sum += sum(val_list)
         self.count += len(val_list)
 
-        # print(f'<{self.id}> output: {logit_tensor.tolist()}, pred: {pred_tensor.tolist()}, target: {target_tensor.tolist()} => {val_list}')
-        # print(f'sum: {sum(val_list)}')
 
     def update_sensitivity(self, logit_tensor, target_tensor):
         pred_tensor = F.relu(logit_tensor.sign())
         val_list = (pred_tensor * target_tensor).tolist()
         self.sum += sum(val_list)
         self.count += sum(target_tensor.tolist())
-        # print(f'<{self.id}> output: {logit_tensor.tolist()}, pred: {pred_tensor.tolist()}, target: {target_tensor.tolist()} => {val_list}')
 
     def update_specificity(self, logit_tensor, target_tensor):
         pred_tensor = F.relu(logit_tensor.sign())
         val_list = ((1. - pred_tensor) * (1. - target_tensor)).tolist()
         self.sum += sum(val_list)
         self.count += (len(val_list) - sum(target_tensor.tolist()))
-        # print(f'<{self.id}> logit: {logit_tensor.tolist()}, pred: {pred_tensor.tolist()}, target: {target_tensor.tolist()} => {val_list}')
 
     def update_repr_num(self, logit, target_repr_num):
         pred = torch.argmax(logit, dim = 1, keepdim=True)
@@ -770,6 +744,7 @@ if __name__ == '__main__':
                                                  AverageMeter('tr', 'sensitivity'),
                                                  AverageMeter('tr', 'specificity'),
                                                  ]
+    # For Cross-Validation
     for i in config['default'].gettuple('fold_num'):
         main(i, performance_metric_tr, performance_metric_val, performance_metric_stat)
 
