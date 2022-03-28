@@ -1,4 +1,4 @@
-# volume classification for rectal MR
+# Volume Classification for Rectal MR
 ## Train
 python main_volume_wise.py --train
 
