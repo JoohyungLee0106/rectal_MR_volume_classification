@@ -12,7 +12,7 @@ python main_volume_wise.py --train
 ## Test
 python main_volume_wise.py
 
-# ETC
+## ETC
 1. Currently, utils/loss.py do support focal loss and center loss, however, triplet loss is included in the model. Therefore, running the code will automatically utilize triplet loss by default. We will decouple the triplet loss from the model class and make it as an option shortly.
 
 2. Currently, though frame-wise encoder is available by model/video_resnet_triplet_frame_wise.py, we will shortly decouple the triplet loss as described above and make it available at the main code.
