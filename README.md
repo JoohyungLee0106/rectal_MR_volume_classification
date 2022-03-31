@@ -2,10 +2,10 @@
 ## Train
 python main_volume_wise.py --train
 
-1. Select fusion type by --fusion\
+1. Select fusion type by *--fusion*\
 &rarr; fr2d, fr3d, f2plus1d, fmc2, fmc3, fmc4, fmc5, frmc2, frmc3, frmc4, frmc5 
 
-2. Select frame aggregation function by --aggregation-function\
+2. Select frame aggregation function by *--aggregation-function*\
 &rarr; bilinear, gap, mxp, attention
 
 
