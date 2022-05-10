@@ -53,11 +53,11 @@ config.read('config_rectumcrop_c.ini')
 node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='PyTorch Image Classification Training')
-parser.add_argument('-n', '--node', default='',
+parser.add_argument('-n', '--node', default='keti_3090',
                     choices=node_list,
                     help='model architecture: ' +
                          ' | '.join(node_list) +
-                         ' (default: kaist_desktop)')
+                         ' (default: keti_3090)')
 # temp!!!
 parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
                                             'rmc2', 'rmc3', 'rmc4', 'rmc5'], help='Mixtures of 2D and 3D CNN')

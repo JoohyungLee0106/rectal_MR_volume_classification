@@ -33,7 +33,7 @@ config.read('config_rectumcrop_c.ini')
 node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='Rectal MR Volume Classification')
-parser.add_argument('-n', '--node', default='keti_3080', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: kaist_server)')
+parser.add_argument('-n', '--node', default='keti_3090', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: keti_3090)')
 # parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5', 'frmc2', 'frmc3', 'frmc4', 'frmc5'],
 #                     help='Mixtures of 2D and 3D CNN')
 parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
