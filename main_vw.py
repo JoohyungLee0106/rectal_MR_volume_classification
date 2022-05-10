@@ -33,25 +33,30 @@ config.read('config_rectumcrop_c.ini')
 node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='Rectal MR Volume Classification')
-parser.add_argument('-n', '--node', default='', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: kaist_server)')
-parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5', 'frmc2', 'frmc3', 'frmc4', 'frmc5'],
-                    help='Mixtures of 2D and 3D CNN')
+parser.add_argument('-n', '--node', default='keti_3080', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: kaist_server)')
+# parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5', 'frmc2', 'frmc3', 'frmc4', 'frmc5'],
+#                     help='Mixtures of 2D and 3D CNN')
+parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
+                                            'rmc2', 'rmc3', 'rmc4', 'rmc5'], help='Mixtures of 2D and 3D CNN')
 parser.add_argument('--aggregation-function', default='bilinear', choices=['bilinear', 'gap', 'mxp', 'attention'],
                     help='Function to merge frame-level feature')
-parser.add_argument('--workers', default=8, type=int, help='number of data loading workers (default: 4)')
+parser.add_argument('--workers', default=16, type=int, help='number of data loading workers (default: 4)')
 parser.add_argument('--test_aug', default=10, type=int, help='number of augmentations for test-time augmentation')
-parser.add_argument('-g', '--gpu', nargs="+", default=0, type=int, help='(List of) GPU id(s) to use.')
+parser.add_argument('-g', '--gpu', nargs="+", default=[0], type=int, help='(List of) GPU id(s) to use.')
 parser.add_argument('--resume', action='store_true', help='to resume from the stored weights')
-parser.add_argument('--train', action='store_true', help='to train the model')
+parser.add_argument('--train', action='store_false', help='to train the model')
+parser.add_argument('--folder-name', default='ex', type=str, help='save folder name (default: ex)')
 args = parser.parse_args()
 args.test_noaug = 1
 
-NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion.replace('f',''), 'att_type': [False]*4, 'if_framewise': True,
+NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion, 'att_type': [False]*4, 'if_framewise': True,
                  'loss': losses.__dict__['FocalLoss'], 'loss_param': {}}
 
-
+config['by_exp']['save_folder_name'] = args.folder_name
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
+config['default']['batch_size'] = '8'
+args.workers = int(config['default']['batch_size'])
 
 try:
     os.mkdir(config.get(args.node, 'result_save_directory'))
@@ -161,12 +166,20 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
     else:
         train_sampler = None
 
+    # train_loader_t2 = torch.utils.data.DataLoader(
+    #     train_dataset_t2, batch_size=8, shuffle=True, drop_last=True,
+    #     num_workers=args.workers, pin_memory=False, persistent_workers = True)
+
+    # train_loader_t3 = torch.utils.data.DataLoader(
+    #     train_dataset_t3, batch_size=8, shuffle=True, drop_last=True,
+    #     num_workers=args.workers, pin_memory=False, persistent_workers = True)
+
     train_loader_t2 = torch.utils.data.DataLoader(
-        train_dataset_t2, batch_size=4, shuffle=True, drop_last=True,
+        train_dataset_t2, batch_size=int(config.getint('default', 'batch_size')/2), shuffle=True, drop_last=True,
         num_workers=args.workers, pin_memory=False, persistent_workers = True)
 
     train_loader_t3 = torch.utils.data.DataLoader(
-        train_dataset_t3, batch_size=4, shuffle=True, drop_last=True,
+        train_dataset_t3, batch_size=int(config.getint('default', 'batch_size')/2), shuffle=True, drop_last=True,
         num_workers=args.workers, pin_memory=False, persistent_workers = True)
 
     test_loader_aug = torch.utils.data.DataLoader(
@@ -185,7 +198,10 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
 
     if args.train:
         reset_seed()
+        # t1=time.time()
         for epoch in range(args.start_epoch, config.getint('default', 'max_epoch')):
+            # print(f'TIME PER ONE EPOCH: {time.time() - t1}')
+            # t1=time.time()
 
             # train for one epoch
             args.t2n = len(train_dataset_t2)
@@ -339,7 +355,7 @@ def train(train_loader, model, optimizer, performance_metric, args):
         (torch.sum(loss)).backward()
         optimizer.step()
 
-        if _i*8.0 > args.t2n + args.t3n - 8:
+        if _i*float(config.getint('default', 'batch_size')) > args.t2n + args.t3n - int(config.getint('default', 'batch_size')):
             return loss_all
 
 
@@ -468,7 +484,7 @@ def restore_and_save_model_init(args, model, optimizer, fold, dir_results):
     __strict = False
     if config.getboolean('by_exp', 'if_with_mask'):
         __strict = False
-    load_path = 'model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(
+    load_path = 'weight_files/model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(
         NETWORK_PARAM['encoder_dim_type']) + '_triplet' + '.pth.tar'
 
     if os.path.isfile(load_path):

@@ -59,6 +59,9 @@ parser.add_argument('-n', '--node', default='',
                          ' | '.join(node_list) +
                          ' (default: kaist_desktop)')
 # temp!!!
+parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
+                                            'rmc2', 'rmc3', 'rmc4', 'rmc5'], help='Mixtures of 2D and 3D CNN')
+parser.add_argument('--folder-name', default='ex', type=str, help='save folder name (default: ex)')
 parser.add_argument('-w', '--workers', default=8, type=int,
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-g', '--gpu', nargs="+", default=0, type=int,
@@ -73,18 +76,21 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
 #                     help='Loss computation from category/rectum/cancer  (default: category)')
 args = parser.parse_args()
 
+config['default']['batch_size'] = '8'
+args.workers = int(config['default']['batch_size'])
+
 # temp!
 # kaist_server, kaist_desktop, ncc_jhl, ncc_oh, ncc_or, ncc_server, ncc_rtx, ncc_image, keti3080
 # args.node = 'ncc_server'
 # args.gpu = [0,1,2]
 # GPU_ID = "0,1,2"
-args.node = 'keti_desktop'
-args.gpu = [0]
-GPU_ID = "0"
+# args.node = 'keti_3080'
+# args.gpu = [0]
+GPU_ID = str(args.gpu[0])
 # config[args.node]['output_device'] = '1'
-NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc5', 'att_type': [False]*4, 'if_framewise': True}
+NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion, 'att_type': [False]*4, 'if_framewise': True}
 
-args.workers = 16
+# args.workers = 16
 # resnet_2d, r3d, mc3, rmc3
 # config['by_exp']['dimension'] = '2D'
 config['by_exp']['dimension'] = '3D'
@@ -102,7 +108,7 @@ config['loss']['category'] = 'FocalLoss'
 # config['by_exp']['network'] = 'Attention_custom'
 
 config['by_exp']['if_half_precision'] = 'False'
-config['default']['batch_size'] = '8'
+# config['default']['batch_size'] = '8'
 # config['by_exp']['save_group_name'] = 'cvpr2021_rc'
 
 # config['loss_arg']['rectum'] = '1.0'
@@ -165,7 +171,7 @@ args.test_noaug = 1
 
 # config['by_exp']['save_folder_name'] = 'bb0215_repr_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
 # config['by_exp']['save_folder_name'] = 'bilin_1_all_image0'
-config['by_exp']['save_folder_name'] = 'ex'
+config['by_exp']['save_folder_name'] = args.folder_name
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
 
@@ -321,7 +327,10 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
     if args.train:
         reset_seed()
         # TEMP
+        # t1=time.time()
         for epoch in range(args.start_epoch, config.getint('default', 'max_epoch')):
+            # print(f'TIME PER ONE EPOCH: {time.time() - t1}')
+            # t1=time.time()
         # for epoch in range(3):
 
             # train for one epoch

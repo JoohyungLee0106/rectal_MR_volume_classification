@@ -275,9 +275,10 @@ class VideoResNet(nn.Module):
         n = data["repr_num"].size(0)
         d = data["repr_num"].size(1)
         # data['repr_num'] = data['repr_num'].cuda(self.fc.weight.get_device())
-        r = 8
-        rt3 = 4
-        rt2 = 4
+        r =int(data["image"].size(0))
+        rt3 = int(data["image"].size(0)/2)
+        rt2 = r-rt3
+        # print(f'shape: {data["image"].size()}')
 
         # rt2 = int((torch.sum(data["repr_num"]) - torch.sum(data["repr_num"] * data["category"].view(n,1).expand(n,d))).item())
         # x = (data['image'] - torch.mean(data['image'], dim=(2,3,4), keepdim=True))/torch.std(data['image'], dim=(2,3,4), keepdim=True)

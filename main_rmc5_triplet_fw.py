@@ -59,11 +59,13 @@ parser.add_argument('-n', '--node', default='',
                          ' | '.join(node_list) +
                          ' (default: kaist_desktop)')
 # temp!!!
+parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
+                                            'rmc2', 'rmc3', 'rmc4', 'rmc5'], help='Mixtures of 2D and 3D CNN')
+parser.add_argument('--folder-name', default='ex', type=str, help='save folder name (default: ex)')
 parser.add_argument('-w', '--workers', default=8, type=int,
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-g', '--gpu', nargs="+", default=0, type=int,
                     help='(List of) GPU id(s) to use.')
-
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
@@ -73,24 +75,26 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
 #                     help='Loss computation from category/rectum/cancer  (default: category)')
 args = parser.parse_args()
 
+config['default']['batch_size'] = '8'
+args.workers = int(config['default']['batch_size'])
+
 # temp!
 # kaist_server, kaist_desktop, ncc_jhl, ncc_oh, ncc_or, ncc_server, ncc_rtx, ncc_image, keti3080
 # args.node = 'keti3080'
 # args.gpu = [0]
 # GPU_ID = "0"
-args.node = 'ncc_image'
-args.gpu = [1]
-GPU_ID = "1"
+# args.node = 'keti_3080'
+# args.gpu = [1]
+GPU_ID = str(args.gpu[0])
 # config[args.node]['output_device'] = '1'
 # LOSS_PARAM = {'backprop_center': True, 'cl_lambda' : 0.003}
 # NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc5', 'att_type': [False]*4, 'if_framewise': True,
 #                  'loss': losses.__dict__['FocalLoss_CenterLoss'], 'loss_param': LOSS_PARAM}
 
 LOSS_PARAM = {}
-NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc5', 'att_type': [False]*4, 'if_framewise': True,
+NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion, 'att_type': [False]*4, 'if_framewise': True,
                  'loss': losses.__dict__['FocalLoss'], 'loss_param': LOSS_PARAM}
 
-args.workers = 24
 # resnet_2d, r3d, mc3, rmc3
 # config['by_exp']['dimension'] = '2D'
 config['by_exp']['dimension'] = '3D'
@@ -107,7 +111,7 @@ config['by_exp']['network'] = 'encoder'
 # config['by_exp']['network'] = 'Attention_custom'
 
 config['by_exp']['if_half_precision'] = 'False'
-config['default']['batch_size'] = '8'
+
 # config['by_exp']['save_group_name'] = 'cvpr2021_rc'
 
 # config['loss_arg']['rectum'] = '1.0'
@@ -167,9 +171,9 @@ args.test_noaug = 1
 #                  'decoder_type': 'unet', 'if_deconv':True}
 
 
-config['by_exp']['save_folder_name'] = 'loss_tripletloss_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
+# config['by_exp']['save_folder_name'] = 'loss_tripletloss_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
 # config['by_exp']['save_folder_name'] = 'bilin_1_all_image0'
-# config['by_exp']['save_folder_name'] = 'ex'
+config['by_exp']['save_folder_name'] = args.folder_name
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
 
@@ -318,11 +322,11 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
         train_sampler = None
 
     train_loader_t2 = torch.utils.data.DataLoader(
-        train_dataset_t2, batch_size=4, shuffle=True, drop_last=True,
+        train_dataset_t2, batch_size=int(config.getint('default', 'batch_size')/2), shuffle=True, drop_last=True,
         num_workers=args.workers, pin_memory=True)
 
     train_loader_t3 = torch.utils.data.DataLoader(
-        train_dataset_t3, batch_size=4, shuffle=True, drop_last=True,
+        train_dataset_t3, batch_size=int(config.getint('default', 'batch_size')/2), shuffle=True, drop_last=True,
         num_workers=args.workers, pin_memory=True)
 
     # val_loader = torch.utils.data.DataLoader(
@@ -581,7 +585,8 @@ def train(train_loader, model, optimizer, performance_metric, args):
         optimizer.step()
 
         # print(f'center: {model.loss["category"].center[:5, :]}')
-        if _i*8.0 > args.t2n + args.t3n - 8:
+        # if _i*8.0 > args.t2n + args.t3n - 8:
+        if _i*float(config.getint('default', 'batch_size')) > args.t2n + args.t3n - int(config.getint('default', 'batch_size')):
             # print(f'_i*8.0: {_i*8.0}')
             # print(f'args.t2n + args.t3n : {args.t2n + args.t3n}')
             return loss_all
@@ -724,7 +729,7 @@ def restore_and_save_model_init(args, model, optimizer, fold, dir_results):
             __strict = False
             load_path = 'model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(NETWORK_PARAM['encoder_dim_type']) + '_' + str(NETWORK_PARAM['att_type'][1]) +'.pth.tar'
         else:
-            load_path = 'model_init_'+str(NETWORK_PARAM['resnet_type'])+'_'+str(NETWORK_PARAM['encoder_dim_type'])+'.pth.tar'
+            load_path = 'weight_files/model_init_'+str(NETWORK_PARAM['resnet_type'])+'_'+str(NETWORK_PARAM['encoder_dim_type'])+'.pth.tar'
 
         if os.path.isfile(load_path):
             print(f'=> loading checkpoint {load_path}, strict:{__strict}')
@@ -1104,7 +1109,7 @@ if __name__ == '__main__':
     # for i in [1, 2]:best_loss
     #     print('FOLD: '+str(i))
     for i in config['default'].gettuple('fold_num'):
-    # for i in [6,7,8,9,10]:
+    # for i in [1,10]:
         print('FOLD: ' + str(i))
         main(i, performance_metric_tr, performance_metric_val, performance_metric_stat)
 
