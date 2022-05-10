@@ -163,9 +163,9 @@ args.test_noaug = 1
 #                  'decoder_type': 'unet', 'if_deconv':True}
 
 
-config['by_exp']['save_folder_name'] = 'bb0215_repr_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
+# config['by_exp']['save_folder_name'] = 'bb0215_repr_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
 # config['by_exp']['save_folder_name'] = 'bilin_1_all_image0'
-# config['by_exp']['save_folder_name'] = 'ex'
+config['by_exp']['save_folder_name'] = 'ex'
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
 
@@ -209,7 +209,7 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
                 layer.float()
     else:
         model = models.__dict__[config.get('by_exp', 'network')](**NETWORK_PARAM)
-    # print(f'model param#: {model.}')
+    print(f'model param #: {sum(p.numel() for p in model.parameters() if p.requires_grad)}')
     optimizer = torch.optim.SGD(model.parameters(), config.getfloat('default', 'lr_init'),
                                 momentum=config.getfloat('default', 'momentum'),
                                 weight_decay=config.getfloat('default', 'weight_decay'))
@@ -666,9 +666,9 @@ def restore_and_save_model_init(args, model, optimizer, fold, dir_results):
         # __strict = False
         if config.getboolean('by_exp', 'if_with_mask'):
             __strict = False
-            load_path = 'model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(NETWORK_PARAM['encoder_dim_type']) + '_' + str(NETWORK_PARAM['att_type'][1]) +'.pth.tar'
+            load_path = 'weight_files/model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(NETWORK_PARAM['encoder_dim_type']) + '_' + str(NETWORK_PARAM['att_type'][1]) +'.pth.tar'
         else:
-            load_path = 'model_init_'+str(NETWORK_PARAM['resnet_type'])+'_'+str(NETWORK_PARAM['encoder_dim_type'])+'.pth.tar'
+            load_path = 'weight_files/model_init_'+str(NETWORK_PARAM['resnet_type'])+'_'+str(NETWORK_PARAM['encoder_dim_type'])+'.pth.tar'
 
         if os.path.isfile(load_path):
             print(f'=> loading checkpoint {load_path}, strict:{__strict}')
