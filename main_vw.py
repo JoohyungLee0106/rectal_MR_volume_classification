@@ -485,7 +485,7 @@ def restore_and_save_model_init(args, model, optimizer, fold, dir_results):
     if config.getboolean('by_exp', 'if_with_mask'):
         __strict = False
     load_path = 'weight_files/model_init_' + str(NETWORK_PARAM['resnet_type']) + '_' + str(
-        NETWORK_PARAM['encoder_dim_type']) + '_triplet' + '.pth.tar'
+        NETWORK_PARAM['encoder_dim_type']) + '.pth.tar'
 
     if os.path.isfile(load_path):
         print(f'=> loading checkpoint {load_path}, strict:{__strict}')
