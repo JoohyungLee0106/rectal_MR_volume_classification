@@ -34,4 +34,4 @@ main_vw.py
 &rarr; bilinear, gap, mxp, attention
 
 ## ETC
-1. Currently, supplementary center loss is not supported.
+1. Currently, supplementary center loss is under construction.
