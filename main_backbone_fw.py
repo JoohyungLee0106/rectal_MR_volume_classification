@@ -1,4 +1,3 @@
-# LAST updated: 20201031 17:00
 import configparser
 from configparser import ExtendedInterpolation
 import pandas as pd
@@ -29,20 +28,12 @@ import utils.loss as losses
 from sklearn import metrics
 from utils.augmentation import augmentation
 import utils.data_provider as custom_datasets
-# model = models.__dict__[args.arch](pretrained=True)
 
 from utils.augmentation import augmentation
-# import model.encoders_sep1 as models
 import model.video_resnet_repr_only as models
-# import model.guided_attention as models
-# import model.self_attention_module as self_attention
-
-# import model.guided_attention as models
 import matplotlib.pyplot as plt
 
 
-# is model restoration (after patience) better than conventional method?
-# network 랑 network_attention 합치거나 dict 를 합치거나
 
 def parse_int_tuple(input):
     return tuple(int(k.strip()) for k in input[1:-1].split(','))
@@ -71,106 +62,27 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
-# parser.add_argument('-l', '--loss', nargs="+", default='',
-#                     choices=['category', 'rectum', 'cancer'],
-#                     help='Loss computation from category/rectum/cancer  (default: category)')
 args = parser.parse_args()
 
-config['default']['batch_size'] = '8'
-args.workers = int(config['default']['batch_size'])
+# config['default']['batch_size'] = '8'
+# args.workers = int(config['default']['batch_size'])
 
-# temp!
-# kaist_server, kaist_desktop, ncc_jhl, ncc_oh, ncc_or, ncc_server, ncc_rtx, ncc_image, keti3080
-# args.node = 'ncc_server'
-# args.gpu = [0,1,2]
-# GPU_ID = "0,1,2"
-# args.node = 'keti_3080'
-# args.gpu = [0]
 GPU_ID = str(args.gpu[0])
-# config[args.node]['output_device'] = '1'
 NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion, 'att_type': [False]*4, 'if_framewise': True}
 
-# args.workers = 16
-# resnet_2d, r3d, mc3, rmc3
-# config['by_exp']['dimension'] = '2D'
 config['by_exp']['dimension'] = '3D'
 config['by_exp']['network'] = 'encoder'
-# criterion[key] = (losses.__dict__[config.get('loss', key)])(config.getfloat('loss_arg', key)).cuda()
-
-# config['loss']['category'] = 'FocalLoss_triplet_adj'
 config['loss']['category'] = 'FocalLoss'
-
-
-# config['loss']['repr_num'] = 'SmoothL1Loss'
-# config['loss_arg']['repr_num'] = ''
-
-# config['by_exp']['network'] = 'Attention'
-# config['by_exp']['network'] = 'Attention_custom'
-
 config['by_exp']['if_half_precision'] = 'False'
-# config['default']['batch_size'] = '8'
-# config['by_exp']['save_group_name'] = 'cvpr2021_rc'
-
-# config['loss_arg']['rectum'] = '1.0'
-# config['loss_arg']['cancer'] = '1.0'
 config['default']['end_patience'] = '40'
-
-# if config['by_exp']['network'] == 'Attention_custom':
-#     if config['by_exp']['dimension'] == '2D':
-#         config['by_exp']['network'] = 'Attention_custom_2d'
-#         config['by_exp']['mask_size'] = '(64,64)'
-#     elif config['by_exp']['dimension'] == '3D':
-#         config['by_exp']['network'] = 'Attention_custom_3d'
-#         config['by_exp']['mask_size'] = '(7,64,64)'
-# else:
-#     if config['by_exp']['dimension'] == '2D':
-#         config['by_exp']['mask_size'] = '(256,256)'
-#     elif config['by_exp']['dimension'] == '3D':
-#         config['by_exp']['mask_size'] = '(7,256,256)'
 
 args.resume = False
 args.train = True
 
-# args.resume = True
-# args.train = False
 # 0 if do not want to perform the test
 args.test_aug = 10
 args.test_noaug = 1
 
-
-# NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc3', 'att_type': ['SE','SE','SE','SE'], 'if_framewise': False}
-# NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc3', 'att_type': ['CBAM','CBAM','CBAM','CBAM'], 'if_framewise': False}
-# NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc3', 'att_type': [False,'NL','NL',False], 'if_framewise': False}
-
-
-# if config['by_exp']['dimension'] == '2D':
-#     NETWORK_PARAM = {'resnet_type': 34, 'encoder_dim_type': '2d', 'att_type': [False,'NL','NL',False], 'stride_D1': [1,1,1,1]}
-# elif config['by_exp']['dimension'] == '3D':
-#     NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': 'rmc6', 'att_type': ['SE','SE','SE','SE'], 'stride_D1': [1,1,1,1]}
-
-# if config['by_exp']['network'] == 'Attention':
-#     DECODER_PARAM = {'decoder_type': 'unet', 'if_deconv': True}
-#     DECODER = DECODER_PARAM['decoder_type']
-# elif 'Attention_custom' in config['by_exp']['network']:
-#     DECODER_PARAM = {}
-#     DECODER = 'custom'
-#
-# NETWORK_PARAM.update(DECODER_PARAM)
-# print('network:')
-# elif config['by_exp']['network'] == 'Attention':
-
-
-
-# NETWORK_PARAM = {'resnet_type': 34, 'encoder_dim_type': 'rmc6', 'att_type': ['SE','SE','SE','SE'], 'stride_D1': [1, 2, 2, 2]}
-# NETWORK_PARAM = {'resnet_type': 34, 'encoder_dim_type': 'rmc6', 'att_type': [False]*4, 'stride_D1': [1, 1, 1, 1]}
-# resnet_type=34, encoder_dim_type='2d', att_type=None, stride_D1=[1, 2, 2, 2], if_nl=[False]*3,
-#                  decoder_type='unet', conv_builder = [Conv3DSimple]*3, if_deconv=Truefeature_dim_toptobot
-# NETWORK_PARAM = {'resnet_type': 34, 'encoder_dim_type': 'r3d', 'att_type': 'CBAM', 'stride_D1': [1, 1, 1, 1], 'if_nl': [False]*3,
-#                  'decoder_type': 'unet', 'if_deconv':True}
-
-
-# config['by_exp']['save_folder_name'] = 'bb0215_repr_'+str(NETWORK_PARAM['encoder_dim_type'])+'_'+str(NETWORK_PARAM['att_type'][1])+'_'+str(args.node)
-# config['by_exp']['save_folder_name'] = 'bilin_1_all_image0'
 config['by_exp']['save_folder_name'] = args.folder_name
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
@@ -223,13 +135,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
                                                            factor=config.getfloat('default', 'scheduler_factor'),
                                                            patience=config.getfloat('default', 'scheduler_patience'))
 
-    # save_checkpoint({
-    #     'epoch': 1,
-    #     'network': config.get('by_exp', 'network'),
-    #     'state_dict': model.state_dict(),
-    #     'best_loss': 99999,
-    #     'optimizer': optimizer.state_dict(),
-    # }, '')
 
     if args.train:
         restore_and_save_model_init(args, model, optimizer, fold, dir_results)
@@ -248,10 +153,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
 
         model = torch.nn.DataParallel(model, device_ids=args.gpu,
                                       output_device=config.getint(args.node, 'output_device')).cuda()
-        # model = torch.nn.parallel.DistributedDataParallel(model, device_ids=args.gpu)
-        # model = torch.nn.DataParallel(attention_module(**NETWORK_PARAM), device_ids=args.gpu, output_device = 1).cuda()
-    # print(f'hi: {model.module.att_type}')
-
 
 
 
@@ -265,12 +166,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
                                                   path_to_be_replaced=config.get('default', 'path_to_be_replaced'),
                                                   path_new=config.get(args.node, 'path_new'),
                                                   transform=augmentation(config.getint('default', 'image_size')))
-    # , transform = augmentation(config.getint('default', 'image_size'))
-    # val_dataset = custom_datasets.CustomDataset(config.get(args.node, 'csv_val')+ str(fold) + '.csv', dimension=config.get('by_exp', 'dimension'),
-    #                              if_with_mask=config.getboolean('by_exp', 'if_with_mask'), mask_size=config['by_exp'].gettuple('mask_size'), image_size=config.getint('default', 'image_size'),
-    #                             if_replace_path=config.getboolean('default', 'if_replace_path'), if_half_precision = config.getboolean('by_exp', 'if_half_precision'),
-    #                             path_to_be_replaced=config.get('default', 'path_to_be_replaced'),
-    #                             path_new=config.get(args.node, 'path_new'))
 
     test_dataset_aug = custom_datasets.CustomDataset(config.get(args.node, 'csv_val') + str(fold) + '.csv',
                                                        dimension=config.get('by_exp', 'dimension'),
@@ -305,10 +200,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=config.getint('default', 'batch_size'), shuffle=False,
         num_workers=args.workers, pin_memory=True, sampler=train_sampler)
-
-    # val_loader = torch.utils.data.DataLoader(
-    #     val_dataset, batch_size=config.getint('default', 'batch_size'), shuffle=False,
-    #     num_workers=args.workers, pin_memory=True)
 
     test_loader_aug = torch.utils.data.DataLoader(
         test_dataset_aug, batch_size=config.getint('default', 'batch_size'), shuffle=False,
@@ -917,35 +808,6 @@ class StatisticalAnalysis(PerformanceMetrics):
         # self.prob_tensor = torch.max(self.prob_tensor, dim=1, keepdim=False)[0]
 
         self.target_tensor = self.target_tensor[0, :]
-        # print(f'self.logit_tensor: {self.logit_tensor.size()}')
-        # print(f'self.prob_tensor: {self.prob_tensor.size()}')
-        # print(f'self.target_tensor after: {self.target_tensor.size()}')
-        #
-        # print(f'self.repr_num_target before: {len(self.repr_num_target)}')
-
-
-        # self.repr_num_target = list(self.repr_num_target[:int(len(self.repr_num_target) / float(repetition))])
-        # print(f'self.repr_num_target after: {self.repr_num_target}\n')
-        # print(f'self.repr_num_target after: {len(self.repr_num_target)}')
-        # repr_num_acc_list = [1 if repr_num_pred[i] in self.repr_num_target[i] else 0 for i in range(len(repr_num_pred))]
-
-        # repr_num_acc_all = sum(repr_num_acc_list) / float(len(repr_num_acc_list))
-        # print(f'repr_num_acc_list: {repr_num_acc_list}, len: {len(repr_num_acc_list)}')
-        # print(f'self.target_tensor: {self.target_tensor}, len: {self.target_tensor.size()}')
-
-        # repr_num_acc_t2_list = (torch.tensor(repr_num_acc_list, device=self.target_tensor.get_device()) * (
-        #             1 - self.target_tensor)).tolist()
-        # repr_num_acc_t2 = sum(repr_num_acc_t2_list) / float(torch.sum(1 - self.target_tensor))
-        # repr_num_acc_t3_list = (torch.tensor(repr_num_acc_list,
-        #                                      device=self.target_tensor.get_device()) * self.target_tensor).tolist()
-        # repr_num_acc_t3 = sum(repr_num_acc_t3_list) / float(torch.sum(self.target_tensor))
-        # print(f'repr_num_acc_list: {len(repr_num_acc_list)}')
-        # print(f'repr_num_acc_all: {repr_num_acc_all}')
-        # print(f'repr_num_acc_t2_list: {len(repr_num_acc_t2_list)}')
-        # print(f'repr_num_acc_t2: {repr_num_acc_t2}')
-        # print(f'repr_num_acc_t3_list: {len(repr_num_acc_t3_list)}')
-        # print(f'repr_num_acc_t3: {repr_num_acc_t3}')
-
 
         list_prob = list(self.prob_tensor.tolist())
         # print(f'list_prob: {len(list_prob)}')

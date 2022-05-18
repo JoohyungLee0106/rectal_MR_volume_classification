@@ -1,18 +1,34 @@
 # Volume Classification for Rectal MR
-## Train
-python main_volume_wise.py --train
 
-1. Select fusion type by *--fusion*\
+## Topics:
+1. 2D vs. 3D vs. Mixtures of 2D and 3D
+2. Supplementary loss function
+3. Depth aggregation function
+
+## Common parser arguments:
+1. *--fusion*\
 &rarr; fr2d, fr3d, f2plus1d, fmc2, fmc3, fmc4, fmc5, frmc2, frmc3, frmc4, frmc5 
 
-2. Select frame aggregation function by *--aggregation-function*\
+2. *--folder-name*\
+&rarr; folder name to save results
+
+## 1. 2D vs. 3D vs. Mixtures of 2D and 3D
+
+main_backbone_fw.py
+
+## 2. Supplementary loss function
+
+### + triplet loss
+main_triplet_fw.py
+### + center loss
+main_center_loss_sgd_fw.py (Under Construction)
+
+## 3. 2D vs. 3D vs. Mixtures of 2D and 3D
+
+main_vw.py
+
+* Select frame aggregation function by *--aggregation-function*\
 &rarr; bilinear, gap, mxp, attention
 
-
-## Test
-python main_volume_wise.py
-
 ## ETC
-1. Currently, utils/loss.py do support focal loss and center loss, however, triplet loss is included in the model. Therefore, running the code will automatically utilize triplet loss by default. We will decouple the triplet loss from the model class and make it as an option shortly.
-
-2. Currently, though frame-wise encoder is available by model/video_resnet_triplet_frame_wise.py, we will shortly decouple the triplet loss as described above and make it available at the main code.
+1. Currently, supplementary center loss is not supported.

@@ -34,8 +34,6 @@ node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='Rectal MR Volume Classification')
 parser.add_argument('-n', '--node', default='keti_3090', choices=node_list, help='model architecture: ' + ' | '.join(node_list) + ' (default: keti_3090)')
-# parser.add_argument('--fusion', default='frmc5', choices=['fr2d', 'fr3d', 'f2plus1d', 'fmc2', 'fmc3', 'fmc4', 'fmc5', 'frmc2', 'frmc3', 'frmc4', 'frmc5'],
-#                     help='Mixtures of 2D and 3D CNN')
 parser.add_argument('--fusion', default='rmc5', choices=['r2d', 'r3d', '2plus1d', 'mc2', 'mc3', 'mc4', 'mc5', 
                                             'rmc2', 'rmc3', 'rmc4', 'rmc5'], help='Mixtures of 2D and 3D CNN')
 parser.add_argument('--aggregation-function', default='bilinear', choices=['bilinear', 'gap', 'mxp', 'attention'],
@@ -55,8 +53,7 @@ NETWORK_PARAM = {'resnet_type': 18, 'encoder_dim_type': args.fusion, 'att_type':
 config['by_exp']['save_folder_name'] = args.folder_name
 dir_results = os.path.join(config.get(args.node, 'result_save_directory'), config.get('by_exp', 'save_folder_name'))
 
-config['default']['batch_size'] = '8'
-args.workers = int(config['default']['batch_size'])
+# args.workers = int(config['default']['batch_size'])
 
 try:
     os.mkdir(config.get(args.node, 'result_save_directory'))
@@ -165,14 +162,6 @@ def main(fold, performance_metric_tr, performance_metric_val, performance_metric
         train_sampler = set_sampler(fold)
     else:
         train_sampler = None
-
-    # train_loader_t2 = torch.utils.data.DataLoader(
-    #     train_dataset_t2, batch_size=8, shuffle=True, drop_last=True,
-    #     num_workers=args.workers, pin_memory=False, persistent_workers = True)
-
-    # train_loader_t3 = torch.utils.data.DataLoader(
-    #     train_dataset_t3, batch_size=8, shuffle=True, drop_last=True,
-    #     num_workers=args.workers, pin_memory=False, persistent_workers = True)
 
     train_loader_t2 = torch.utils.data.DataLoader(
         train_dataset_t2, batch_size=int(config.getint('default', 'batch_size')/2), shuffle=True, drop_last=True,
