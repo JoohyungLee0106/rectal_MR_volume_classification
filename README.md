@@ -12,6 +12,9 @@
 2. *--folder-name*\
 &rarr; folder name to save results
 
+3. *--node*\
+&rarr; User must register his/her computer information to config.ini
+
 ## 1. 2D vs. 3D vs. Mixtures of 2D and 3D
 
 main_backbone_fw.py

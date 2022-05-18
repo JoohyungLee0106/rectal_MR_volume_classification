@@ -29,7 +29,7 @@ def parse_int_tuple(input):
 
 
 config = configparser.ConfigParser(converters={'tuple': parse_int_tuple}, interpolation=ExtendedInterpolation())
-config.read('config_rectumcrop_c.ini')
+config.read('config.ini')
 node_list = list(config['node'].keys())
 
 parser = argparse.ArgumentParser(description='Rectal MR Volume Classification')
