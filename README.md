@@ -36,5 +36,5 @@ main_vw.py
 &rarr; bilinear, gap, mxp, attention
 
 ## Sample
-![VCB](/img/easy_hard.png){: width="10%" height="10%"}
+![VCB](/img/easy_hard.png){: width="100" height="100"}
 Examples of T3-stage rectal cancer (a, b) and T2-stage rectal cancer (c, d). The difference between T2-stage and T3-stage rectal cancer is that T2-stage rectal cancer (red line) locates only inside of rectum (white line) whereas T3-stage rectal cancer (red line) invaded outside of rectum (white line). Samples at the right column (b, d) are ambiguous and thus mis-diagnosed samples whereas samples at the left column (a, c) are straightforward.
