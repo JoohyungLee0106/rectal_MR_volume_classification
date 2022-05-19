@@ -1,6 +1,6 @@
 # Volume Classification for Rectal MR
 
-![overall scheme](/img/fig1.png)
+![overall scheme](/img/overall_scheme.png)
 
 ## Topics:
 1. 2D vs. 3D vs. Mixtures of 2D and 3D
@@ -34,3 +34,8 @@ main_vw.py
 
 * Select frame aggregation function by *--aggregation-function*\
 &rarr; bilinear, gap, mxp, attention
+
+## Sample
+
+![VCB](/img/easy_hard.png)
+Examples of T3-stage rectal cancer (a, b) and T2-stage rectal cancer (c, d). The difference between T2-stage and T3-stage rectal cancer is that T2-stage rectal cancer (red line) locates only inside of rectum (white line) whereas T3-stage rectal cancer (red line) invaded outside of rectum (white line). Samples at the right column (b, d) are ambiguous and thus mis-diagnosed samples whereas samples at the left column (a, c) are straightforward.
