@@ -1,5 +1,7 @@
 # Volume Classification for Rectal MR
 
+![overall scheme](/img/fig1.png)
+
 ## Topics:
 1. 2D vs. 3D vs. Mixtures of 2D and 3D
 2. Supplementary loss function
@@ -24,7 +26,7 @@ main_backbone_fw.py
 ### + triplet loss
 main_triplet_fw.py
 ### + center loss
-main_center_loss_sgd_fw.py (Under Construction)
+main_center_loss_sgd_fw.py
 
 ## 3. 2D vs. 3D vs. Mixtures of 2D and 3D
 
@@ -32,6 +34,3 @@ main_vw.py
 
 * Select frame aggregation function by *--aggregation-function*\
 &rarr; bilinear, gap, mxp, attention
-
-## ETC
-1. Currently, supplementary center loss is under construction.
