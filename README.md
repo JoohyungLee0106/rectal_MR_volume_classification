@@ -1,4 +1,4 @@
-# Volume Classification for Rectal MR
+# Moving from 2D to 3D: volumetric medical image classification for rectal cancer staging
 
 ![overall scheme](/img/overall_scheme.png)
 
